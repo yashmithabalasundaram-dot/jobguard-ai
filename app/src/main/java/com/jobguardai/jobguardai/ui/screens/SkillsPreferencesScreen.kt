@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
@@ -33,13 +35,24 @@ import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.JobSeekerViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SkillsPreferencesScreen(navController: NavController) {
-    val availableSkills = listOf("Kotlin", "Jetpack Compose", "Android SDK", "MVVM", "Room", "Coroutines", "Retrofit", "Git", "Figma", "UI/UX")
-    val selectedSkills = remember { mutableStateListOf("Kotlin", "Jetpack Compose", "MVVM", "Coroutines") }
-    var preferredRole by remember { mutableStateOf("Android Developer") }
+fun SkillsPreferencesScreen(
+    navController: NavController,
+    viewModel: JobSeekerViewModel = viewModel()
+) {
+    val userProfile by viewModel.userProfile.collectAsState()
+    val availableSkills = listOf("Kotlin", "Jetpack Compose", "Android SDK", "MVVM", "Room", "Coroutines", "Retrofit", "Git", "Figma", "UI/UX", "Java", "Python", "SQL", "Unit Testing", "CI/CD")
+    val selectedSkills = remember(userProfile) {
+        val list = mutableStateListOf<String>()
+        userProfile?.skillsList?.let { list.addAll(it) }
+        list
+    }
+    var preferredRole by remember(userProfile) {
+        mutableStateOf(userProfile?.preferredRoles?.firstOrNull() ?: "")
+    }
 
     Column(
         modifier = Modifier
@@ -87,7 +100,7 @@ fun SkillsPreferencesScreen(navController: NavController) {
         InputField(
             value = preferredRole,
             onValueChange = { preferredRole = it },
-            label = "Preferred Job Role",
+            label = "Target Job Role",
             placeholder = "e.g. Android Developer"
         )
 
@@ -95,7 +108,15 @@ fun SkillsPreferencesScreen(navController: NavController) {
 
         PrimaryButton(
             text = "Save & Next",
-            onClick = { navController.navigate(ScreenRoutes.UploadResume.route) }
+            onClick = {
+                val roles = if (preferredRole.isNotBlank()) listOf(preferredRole.trim()) else emptyList()
+                viewModel.updateSkillsAndPreferences(
+                    skills = selectedSkills.toList(),
+                    roles = roles,
+                    locations = emptyList()
+                )
+                navController.navigate(ScreenRoutes.UploadResume.route)
+            }
         )
     }
 }

@@ -14,18 +14,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
@@ -36,11 +40,27 @@ import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.AuthUiState
+import com.jobguardai.jobguardai.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(navController: NavController) {
-    var email by remember { mutableStateOf("alex.morgan@example.com") }
-    var password by remember { mutableStateOf("password123") }
+fun LoginScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    val uiState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
+            navController.navigate(ScreenRoutes.HomeDashboard.route) {
+                popUpTo(ScreenRoutes.Login.route) { inclusive = true }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -69,7 +89,7 @@ fun LoginScreen(navController: NavController) {
             value = email,
             onValueChange = { email = it },
             label = "Email Address",
-            placeholder = "alex@example.com",
+            placeholder = "name@example.com",
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
         )
 
@@ -96,11 +116,32 @@ fun LoginScreen(navController: NavController) {
                 .clickable { navController.navigate(ScreenRoutes.ResetPassword.route) }
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        val errorMessage = localError ?: (uiState as? AuthUiState.Error)?.message
+        if (!errorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        val isLoading = uiState is AuthUiState.Loading
 
         PrimaryButton(
-            text = "Log In",
-            onClick = { navController.navigate(ScreenRoutes.HomeDashboard.route) }
+            text = if (isLoading) "Logging In..." else "Log In",
+            enabled = !isLoading,
+            onClick = {
+                if (email.isBlank() || password.isBlank()) {
+                    localError = "Email and password cannot be empty"
+                } else {
+                    localError = null
+                    authViewModel.login(email.trim(), password)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -2,7 +2,6 @@ package com.jobguardai.jobguardai.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jobguardai.jobguardai.ai.ResumeAnalyzer
 import com.jobguardai.jobguardai.data.model.Resume
 import com.jobguardai.jobguardai.data.repository.ResumeRepository
 import kotlinx.coroutines.delay
@@ -30,7 +29,7 @@ class ResumeViewModel(private val repository: ResumeRepository = ResumeRepositor
         loadDefaultResume()
     }
 
-    private fun loadDefaultResume() {
+    fun loadDefaultResume() {
         viewModelScope.launch {
             _selectedResume.value = repository.getDefaultResume()
         }
@@ -38,21 +37,21 @@ class ResumeViewModel(private val repository: ResumeRepository = ResumeRepositor
 
     fun analyzeSelectedResume(fileName: String, uriString: String, rawContent: String = "") {
         viewModelScope.launch {
-            _analysisState.value = ResumeAnalysisState.Processing(10)
-            delay(600)
-            _analysisState.value = ResumeAnalysisState.Processing(45)
-            delay(600)
-            _analysisState.value = ResumeAnalysisState.Processing(85)
-            delay(500)
+            _analysisState.value = ResumeAnalysisState.Processing(25)
+            delay(300)
+            _analysisState.value = ResumeAnalysisState.Processing(65)
+            delay(300)
+            _analysisState.value = ResumeAnalysisState.Processing(90)
 
-            val parsedContent = if (rawContent.isBlank()) {
-                "Resume of candidate with skills in Kotlin, Jetpack Compose, MVVM, Room, REST APIs, Git, Unit Testing, and UI Design."
-            } else rawContent
+            val content = rawContent.ifBlank { "Professional Resume: $fileName" }
 
-            val result = ResumeAnalyzer.analyzeResumeText(parsedContent, fileName, uriString)
-            repository.saveResume(result)
-            _selectedResume.value = result
-            _analysisState.value = ResumeAnalysisState.Completed(result)
+            val res = repository.uploadResume(fileName, content)
+            res.onSuccess { uploaded ->
+                _selectedResume.value = uploaded
+                _analysisState.value = ResumeAnalysisState.Completed(uploaded)
+            }.onFailure {
+                _analysisState.value = ResumeAnalysisState.Error(it.message ?: "Failed to analyze resume")
+            }
         }
     }
 }

@@ -16,30 +16,41 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.jobguardai.jobguardai.data.local.SessionManager
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
+import com.jobguardai.jobguardai.ui.theme.DeepTealPrimary
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
-import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(navController: NavController) {
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
-        delay(2000)
-        navController.navigate(ScreenRoutes.Onboarding.route) {
-            popUpTo(ScreenRoutes.Splash.route) { inclusive = true }
+        delay(1500)
+        val session = SessionManager.getInstance(context)
+        if (session.isLoggedIn()) {
+            navController.navigate(ScreenRoutes.HomeDashboard.route) {
+                popUpTo(ScreenRoutes.Splash.route) { inclusive = true }
+            }
+        } else {
+            navController.navigate(ScreenRoutes.Onboarding.route) {
+                popUpTo(ScreenRoutes.Splash.route) { inclusive = true }
+            }
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(PrimaryBlue),
+            .background(DeepTealPrimary),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -58,7 +69,7 @@ fun SplashScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Smart & Safe Career Platform",
+                text = "Empowering Careers with AI & Trust",
                 color = Color.White.copy(alpha = 0.85f),
                 fontSize = 14.sp
             )

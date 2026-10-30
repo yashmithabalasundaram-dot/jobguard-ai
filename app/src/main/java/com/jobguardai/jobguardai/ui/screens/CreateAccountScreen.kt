@@ -14,18 +14,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
@@ -36,13 +40,27 @@ import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.AuthUiState
+import com.jobguardai.jobguardai.viewmodel.AuthViewModel
 
 @Composable
-fun CreateAccountScreen(navController: NavController) {
+fun CreateAccountScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var localError by remember { mutableStateOf<String?>(null) }
+
+    val uiState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
+            navController.navigate(ScreenRoutes.VerifyEmail.route)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -71,7 +89,7 @@ fun CreateAccountScreen(navController: NavController) {
             value = fullName,
             onValueChange = { fullName = it },
             label = "Full Name",
-            placeholder = "e.g. Alex Morgan"
+            placeholder = "Enter your full name"
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -105,11 +123,32 @@ fun CreateAccountScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
 
+        val errorMessage = localError ?: (uiState as? AuthUiState.Error)?.message
+        if (!errorMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = errorMessage,
+                color = Color.Red,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
         Spacer(modifier = Modifier.height(28.dp))
 
+        val isLoading = uiState is AuthUiState.Loading
+
         PrimaryButton(
-            text = "Register & Continue",
-            onClick = { navController.navigate(ScreenRoutes.VerifyEmail.route) }
+            text = if (isLoading) "Creating Account..." else "Register & Continue",
+            enabled = !isLoading,
+            onClick = {
+                if (fullName.isBlank() || email.isBlank() || password.isBlank()) {
+                    localError = "Please fill in all required fields."
+                } else {
+                    localError = null
+                    authViewModel.register(fullName.trim(), email.trim(), phone.trim(), password)
+                }
+            }
         )
 
         Spacer(modifier = Modifier.height(20.dp))

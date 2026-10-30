@@ -19,8 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.jobguardai.jobguardai.data.model.Education
 import com.jobguardai.jobguardai.ui.components.InputField
 import com.jobguardai.jobguardai.ui.components.PrimaryButton
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
@@ -28,13 +30,17 @@ import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.JobSeekerViewModel
 
 @Composable
-fun EducationDetailsScreen(navController: NavController) {
-    var degree by remember { mutableStateOf("B.S. Computer Science") }
-    var college by remember { mutableStateOf("Stanford University") }
-    var gradYear by remember { mutableStateOf("2024") }
-    var grade by remember { mutableStateOf("3.8 / 4.0 GPA") }
+fun EducationDetailsScreen(
+    navController: NavController,
+    viewModel: JobSeekerViewModel = viewModel()
+) {
+    var degree by remember { mutableStateOf("") }
+    var college by remember { mutableStateOf("") }
+    var gradYear by remember { mutableStateOf("") }
+    var grade by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -71,7 +77,7 @@ fun EducationDetailsScreen(navController: NavController) {
         InputField(
             value = college,
             onValueChange = { college = it },
-            label = "Institution / University",
+            label = "College / University",
             placeholder = "e.g. Stanford University"
         )
 
@@ -89,15 +95,28 @@ fun EducationDetailsScreen(navController: NavController) {
         InputField(
             value = grade,
             onValueChange = { grade = it },
-            label = "Grade / CGPA",
-            placeholder = "e.g. 8.5 CGPA"
+            label = "Grade / Percentage / CGPA",
+            placeholder = "e.g. 3.8 / 4.0 GPA or 85%"
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
         PrimaryButton(
             text = "Save & Next",
-            onClick = { navController.navigate(ScreenRoutes.SkillsPreferences.route) }
+            onClick = {
+                if (degree.isNotBlank() || college.isNotBlank()) {
+                    val edu = Education(
+                        degree = degree.trim(),
+                        institution = college.trim(),
+                        fieldOfStudy = "Computer Science",
+                        startYear = (gradYear.toIntOrNull()?.let { (it - 4).toString() }) ?: "",
+                        endYear = gradYear.trim(),
+                        grade = grade.trim()
+                    )
+                    viewModel.updateEducation(listOf(edu))
+                }
+                navController.navigate(ScreenRoutes.SkillsPreferences.route)
+            }
         )
     }
 }

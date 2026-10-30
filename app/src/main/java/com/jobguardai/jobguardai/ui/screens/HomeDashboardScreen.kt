@@ -33,10 +33,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.data.model.Job
@@ -60,50 +64,45 @@ import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.MintGreenHighlight
 import com.jobguardai.jobguardai.ui.theme.MutedGreyGreenText
 import com.jobguardai.jobguardai.ui.theme.SubtleGreyGreenBorder
+import com.jobguardai.jobguardai.viewmodel.DashboardUiState
+import com.jobguardai.jobguardai.viewmodel.DashboardViewModel
 
 @Composable
-fun HomeDashboardScreen(navController: NavController) {
-    val sampleJobs = listOf(
-        Job(
-            id = "job_1",
-            title = "Senior Android Developer",
-            company = "TechCorp Solutions",
-            location = "San Francisco, CA (Hybrid)",
-            type = "Full-Time",
-            salary = "$130k - $160k",
-            experience = "3-5 yrs",
-            description = "Lead mobile development team using Jetpack Compose and Coroutines.",
-            skills = listOf("Kotlin", "Jetpack Compose", "MVVM"),
-            isSaved = false,
-            matchScore = 94
-        ),
-        Job(
-            id = "job_2",
-            title = "Mobile UI/UX Engineer",
-            company = "InnovateX Labs",
-            location = "Remote",
-            type = "Remote",
-            salary = "$110k - $140k",
-            experience = "2-4 yrs",
-            description = "Build interactive mobile designs with Material 3.",
-            skills = listOf("Jetpack Compose", "Material 3"),
-            isSaved = true,
-            matchScore = 88
-        ),
-        Job(
-            id = "job_4",
-            title = "Urgent Data Entry (High Income)",
-            company = "Global Wealth Systems",
-            location = "Work from Home",
-            type = "Part-Time",
-            salary = "$5,000 / week",
-            experience = "None",
-            description = "Pay $50 starter fee.",
-            isScamFlagged = true,
-            scamReason = "Upfront payment required ($50)",
-            matchScore = 20
-        )
-    )
+fun HomeDashboardScreen(
+    navController: NavController,
+    dashboardViewModel: DashboardViewModel = viewModel()
+) {
+    val uiState by dashboardViewModel.uiState.collectAsState()
+
+    val greeting = when (val state = uiState) {
+        is DashboardUiState.Success -> state.stats.greeting
+        else -> "Welcome to JobGuard AI 👋"
+    }
+
+    val profilePct = when (val state = uiState) {
+        is DashboardUiState.Success -> state.stats.profileCompletion
+        else -> 0
+    }
+
+    val savedCount = when (val state = uiState) {
+        is DashboardUiState.Success -> state.stats.totalSavedJobs.toString()
+        else -> "0"
+    }
+
+    val appCount = when (val state = uiState) {
+        is DashboardUiState.Success -> state.stats.totalApplications.toString()
+        else -> "0"
+    }
+
+    val placementCount = when (val state = uiState) {
+        is DashboardUiState.Success -> state.stats.totalPlacements.toString()
+        else -> "0"
+    }
+
+    val jobsList = when (val state = uiState) {
+        is DashboardUiState.Success -> state.recommendedJobs
+        else -> emptyList()
+    }
 
     BoxWithConstraints(
         modifier = Modifier
@@ -132,7 +131,7 @@ fun HomeDashboardScreen(navController: NavController) {
                 ) {
                     Column {
                         Text(
-                            text = "Good Morning, Alex 👋",
+                            text = greeting,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -147,7 +146,7 @@ fun HomeDashboardScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "AI Guard Active • 3 Recommended Matches",
+                                text = "AI Guard Active • Live MySQL Backend",
                                 fontSize = 12.sp,
                                 color = MintGreenHighlight,
                                 fontWeight = FontWeight.SemiBold
@@ -202,7 +201,7 @@ fun HomeDashboardScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MintGreenHighlight),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, SubtleGreyGreenBorder)
+                    border = BorderStroke(1.dp, SubtleGreyGreenBorder)
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -222,13 +221,13 @@ fun HomeDashboardScreen(navController: NavController) {
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "88% Profile Optimization",
+                            text = "$profilePct% Profile Optimization",
                             color = DarkCharcoalText,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Your resume matches top mobile engineering vacancies.",
+                            text = if (profilePct > 30) "Your profile is optimized for verified engineering vacancies." else "Complete your profile & upload a resume to maximize match score.",
                             color = MutedGreyGreenText,
                             fontSize = 12.sp
                         )
@@ -254,14 +253,14 @@ fun HomeDashboardScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Quick Stats Row
+                // Quick Stats Row (Real Backend Counts)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    StatCard("Saved Jobs", "1", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.SavedJobs.route) }
-                    StatCard("Applications", "2", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.ApplicationTracker.route) }
-                    StatCard("Placements", "2", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.PlacementOpportunities.route) }
+                    StatCard("Saved Jobs", savedCount, Modifier.weight(1f)) { navController.navigate(ScreenRoutes.SavedJobs.route) }
+                    StatCard("Applications", appCount, Modifier.weight(1f)) { navController.navigate(ScreenRoutes.ApplicationTracker.route) }
+                    StatCard("Placements", placementCount, Modifier.weight(1f)) { navController.navigate(ScreenRoutes.PlacementOpportunities.route) }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -287,15 +286,26 @@ fun HomeDashboardScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(sampleJobs) { job ->
-                        JobCard(
-                            job = job,
-                            onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) }
-                        )
+                if (uiState is DashboardUiState.Loading) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = EmeraldSecondary)
+                    }
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(jobsList) { job ->
+                            JobCard(
+                                job = job,
+                                onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) }
+                            )
+                        }
                     }
                 }
             }
@@ -309,7 +319,7 @@ fun StatCard(label: String, count: String, modifier: Modifier = Modifier, onClic
         modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, SubtleGreyGreenBorder),
+        border = BorderStroke(1.dp, SubtleGreyGreenBorder),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(

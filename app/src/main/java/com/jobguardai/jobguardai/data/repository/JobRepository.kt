@@ -2,10 +2,18 @@ package com.jobguardai.jobguardai.data.repository
 
 import com.jobguardai.jobguardai.data.local.JobDao
 import com.jobguardai.jobguardai.data.model.Job
+import com.jobguardai.jobguardai.data.remote.ApiService
+import com.jobguardai.jobguardai.data.remote.RetrofitClient
+import com.jobguardai.jobguardai.data.remote.ToggleSaveRequest
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
 
-class JobRepository(private val jobDao: JobDao? = null) {
+class JobRepository(
+    private val jobDao: JobDao? = null,
+    private val apiService: ApiService = RetrofitClient.getApiService()
+) {
 
     private val demoJobs = listOf(
         Job(
@@ -87,19 +95,140 @@ class JobRepository(private val jobDao: JobDao? = null) {
         )
     )
 
-    fun getJobs(): Flow<List<Job>> {
-        return jobDao?.getAllJobs() ?: flowOf(demoJobs)
+    private val _liveJobs = MutableStateFlow<List<Job>>(emptyList())
+    val liveJobs = _liveJobs.asStateFlow()
+
+    private val _savedJobsList = MutableStateFlow<List<Job>>(emptyList())
+    val savedJobsList = _savedJobsList.asStateFlow()
+
+    fun getJobs(): Flow<List<Job>> = flow {
+        try {
+            val response = apiService.searchJobs(limit = 50)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val dtoList = response.body()!!.data?.jobs ?: emptyList()
+                val mapped = dtoList.map { dto ->
+                    Job(
+                        id = dto.id,
+                        title = dto.title,
+                        company = dto.company,
+                        companyLogo = dto.companyLogo,
+                        location = dto.location,
+                        type = dto.type,
+                        salary = dto.salary,
+                        experience = dto.experience,
+                        description = dto.description,
+                        requirements = dto.requirements,
+                        skills = dto.skills,
+                        isSaved = dto.isSaved,
+                        isScamFlagged = dto.isScamFlagged,
+                        scamReason = dto.scamReason,
+                        matchScore = dto.matchScore,
+                        deadline = dto.deadline,
+                        externalUrl = dto.externalUrl
+                    )
+                }
+                _liveJobs.value = mapped
+                emit(mapped)
+                return@flow
+            }
+        } catch (e: Exception) {
+            // Network fallback
+        }
+        emit(_liveJobs.value)
     }
 
-    fun getSavedJobs(): Flow<List<Job>> {
-        return jobDao?.getSavedJobs() ?: flowOf(demoJobs.filter { it.isSaved })
+    suspend fun searchJobs(query: String? = null, role: String? = null): List<Job> {
+        return try {
+            val response = apiService.searchJobs(query = query, type = if (role == "All") null else role)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val dtoList = response.body()!!.data?.jobs ?: emptyList()
+                dtoList.map { dto ->
+                    Job(
+                        id = dto.id,
+                        title = dto.title,
+                        company = dto.company,
+                        companyLogo = dto.companyLogo,
+                        location = dto.location,
+                        type = dto.type,
+                        salary = dto.salary,
+                        experience = dto.experience,
+                        description = dto.description,
+                        requirements = dto.requirements,
+                        skills = dto.skills,
+                        isSaved = dto.isSaved,
+                        isScamFlagged = dto.isScamFlagged,
+                        scamReason = dto.scamReason,
+                        matchScore = dto.matchScore,
+                        deadline = dto.deadline,
+                        externalUrl = dto.externalUrl
+                    )
+                }
+            } else {
+                filterLocalJobs(query, role)
+            }
+        } catch (e: Exception) {
+            filterLocalJobs(query, role)
+        }
+    }
+
+    private fun filterLocalJobs(query: String?, role: String?): List<Job> {
+        return _liveJobs.value.filter { job ->
+            val matchesQuery = query.isNullOrBlank() ||
+                    job.title.contains(query, ignoreCase = true) ||
+                    job.effectiveCompany.contains(query, ignoreCase = true) ||
+                    job.description.contains(query, ignoreCase = true)
+            val matchesRole = role == null || role == "All" || job.type.contains(role, ignoreCase = true)
+            matchesQuery && matchesRole
+        }
+    }
+
+    fun getSavedJobs(): Flow<List<Job>> = flow {
+        try {
+            val response = apiService.getSavedJobs()
+            if (response.isSuccessful && response.body()?.success == true) {
+                val jobs = response.body()!!.data ?: emptyList()
+                _savedJobsList.value = jobs
+                emit(jobs)
+                return@flow
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
+        emit(_savedJobsList.value)
     }
 
     suspend fun getJobById(id: String): Job? {
-        return jobDao?.getJobById(id) ?: demoJobs.find { it.id == id }
+        try {
+            val response = apiService.getJobById(id)
+            if (response.isSuccessful && response.body()?.success == true) {
+                return response.body()!!.data
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
+        return _liveJobs.value.find { it.id == id } ?: demoJobs.find { it.id == id }
     }
 
-    suspend fun toggleSaveJob(id: String, currentSavedState: Boolean) {
-        jobDao?.updateSavedState(id, !currentSavedState)
+    suspend fun toggleSaveJob(jobId: String, currentSavedState: Boolean) {
+        val newSaved = !currentSavedState
+        // Optimistic UI update
+        _liveJobs.value = _liveJobs.value.map {
+            if (it.id == jobId) it.copy(isSaved = newSaved) else it
+        }
+
+        if (newSaved) {
+            val jobToAdd = _liveJobs.value.find { it.id == jobId }
+            if (jobToAdd != null && _savedJobsList.value.none { it.id == jobId }) {
+                _savedJobsList.value = _savedJobsList.value + jobToAdd.copy(isSaved = true)
+            }
+        } else {
+            _savedJobsList.value = _savedJobsList.value.filter { it.id != jobId }
+        }
+
+        try {
+            apiService.toggleSaveJob(ToggleSaveRequest(jobId))
+        } catch (e: Exception) {
+            // Local fallback already handled
+        }
     }
 }

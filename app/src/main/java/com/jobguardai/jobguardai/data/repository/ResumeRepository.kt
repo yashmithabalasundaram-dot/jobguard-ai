@@ -2,37 +2,51 @@ package com.jobguardai.jobguardai.data.repository
 
 import com.jobguardai.jobguardai.data.local.ResumeDao
 import com.jobguardai.jobguardai.data.model.Resume
+import com.jobguardai.jobguardai.data.remote.ApiService
+import com.jobguardai.jobguardai.data.remote.RetrofitClient
+import com.jobguardai.jobguardai.data.remote.UploadResumeJsonRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-class ResumeRepository(private val resumeDao: ResumeDao? = null) {
-
-    private val sampleResume = Resume(
-        id = "res_1",
-        fileName = "Alex_Morgan_Resume_2025.pdf",
-        fileUri = "content://com.android.providers.downloads.documents/document/resume_1.pdf",
-        uploadDate = "12 Oct 2025",
-        fileSize = "1.4 MB",
-        parsedText = "Alex Morgan - Senior Android Engineer. Proficient in Kotlin, Jetpack Compose, MVVM, Room, Coroutines, Git, CI/CD, and REST APIs.",
-        extractedSkills = listOf("Kotlin", "Jetpack Compose", "Coroutines", "MVVM Architecture", "Room DB", "REST APIs", "Git"),
-        extractedEducation = listOf("B.S. Computer Science - Stanford University (2020-2024)"),
-        extractedExperience = listOf("Android Developer Intern - TechCorp (2023-2024)", "Mobile Project Lead - Campus App (2022-2023)"),
-        missingSections = listOf("Certifications", "Quantified Achievements in Past Work"),
-        improvementSuggestions = listOf(
-            "Add measurable metrics to project outcomes (e.g., 'Improved app speed by 35%')",
-            "Include links to live GitHub repositories or Google Play apps",
-            "Highlight experience with modern Kotlin Flow and dependency injection (Hilt)"
-        ),
-        overallScore = 88,
-        isDefault = true
-    )
+class ResumeRepository(
+    private val resumeDao: ResumeDao? = null,
+    private val apiService: ApiService = RetrofitClient.getApiService()
+) {
 
     fun getResumes(): Flow<List<Resume>> {
-        return resumeDao?.getAllResumes() ?: flowOf(listOf(sampleResume))
+        return resumeDao?.getAllResumes() ?: flowOf(emptyList())
     }
 
-    suspend fun getDefaultResume(): Resume {
-        return resumeDao?.getDefaultResume() ?: sampleResume
+    suspend fun getDefaultResume(): Resume? {
+        try {
+            val response = apiService.getDefaultResume()
+            if (response.isSuccessful && response.body()?.success == true) {
+                val r = response.body()!!.data
+                if (r != null) return r
+            }
+        } catch (e: Exception) {
+            // Offline
+        }
+        return resumeDao?.getDefaultResume()
+    }
+
+    suspend fun uploadResume(fileName: String, content: String): Result<Resume> {
+        return try {
+            val res = apiService.uploadResumeJson(UploadResumeJsonRequest(fileName, content))
+            if (res.isSuccessful && res.body()?.success == true) {
+                val resume = res.body()!!.data
+                if (resume != null) {
+                    resumeDao?.insertResume(resume)
+                    Result.success(resume)
+                } else {
+                    Result.failure(Exception("Failed to parse uploaded resume"))
+                }
+            } else {
+                Result.failure(Exception(res.body()?.message ?: "Upload failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(e.message ?: "Failed to upload resume to backend"))
+        }
     }
 
     suspend fun saveResume(resume: Resume) {

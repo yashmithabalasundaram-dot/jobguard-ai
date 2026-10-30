@@ -14,6 +14,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,8 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.jobguardai.jobguardai.data.model.Job
+import com.jobguardai.jobguardai.data.model.JobApplication
 import com.jobguardai.jobguardai.ui.components.InputField
 import com.jobguardai.jobguardai.ui.components.PrimaryButton
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
@@ -33,10 +38,25 @@ import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.ApplicationState
+import com.jobguardai.jobguardai.viewmodel.ApplicationViewModel
 
 @Composable
-fun ReviewApplicationScreen(navController: NavController, jobId: String = "job_1") {
-    var coverNote by remember { mutableStateOf("I am excited to submit my application for this role. My expertise in Jetpack Compose and Kotlin Coroutines aligns with your requirements.") }
+fun ReviewApplicationScreen(
+    navController: NavController,
+    jobId: String = "job_1",
+    applicationViewModel: ApplicationViewModel = viewModel(),
+    resumeViewModel: com.jobguardai.jobguardai.viewmodel.ResumeViewModel = viewModel()
+) {
+    var coverNote by remember { mutableStateOf("") }
+    val submissionState by applicationViewModel.submissionState.collectAsState()
+    val resume by resumeViewModel.selectedResume.collectAsState()
+
+    LaunchedEffect(submissionState) {
+        if (submissionState is ApplicationState.Submitted) {
+            navController.navigate(ScreenRoutes.ApplicationSubmitted.route)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -48,7 +68,7 @@ fun ReviewApplicationScreen(navController: NavController, jobId: String = "job_1
         Spacer(modifier = Modifier.height(10.dp))
 
         Text(text = "Review Application", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
-        Text(text = "Senior Android Developer • TechCorp Solutions", fontSize = 14.sp, color = TextSecondary)
+        Text(text = "Review verified application details before submission.", fontSize = 14.sp, color = TextSecondary)
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -60,7 +80,12 @@ fun ReviewApplicationScreen(navController: NavController, jobId: String = "job_1
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(text = "Attached Resume", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextPrimary)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "📄 Alex_Morgan_Resume_2025.pdf (88/100 AI Score)", fontSize = 13.sp, color = TextSecondary)
+                val resumeText = if (resume != null) {
+                    "📄 ${resume!!.fileName} (${resume!!.overallScore}/100 AI Score)"
+                } else {
+                    "📄 Default profile resume attached"
+                }
+                Text(text = resumeText, fontSize = 13.sp, color = TextSecondary)
             }
         }
 
@@ -74,11 +99,36 @@ fun ReviewApplicationScreen(navController: NavController, jobId: String = "job_1
             singleLine = false
         )
 
+        val errMessage = (submissionState as? ApplicationState.Error)?.message
+        if (!errMessage.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = errMessage, color = Color.Red, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        }
+
         Spacer(modifier = Modifier.height(32.dp))
 
+        val isSubmitting = submissionState is ApplicationState.Submitting
+
         PrimaryButton(
-            text = "Submit Application",
-            onClick = { navController.navigate(ScreenRoutes.ApplicationSubmitted.route) }
+            text = if (isSubmitting) "Submitting Application..." else "Submit Application",
+            enabled = !isSubmitting,
+            onClick = {
+                val dummyJob = Job(
+                    id = jobId,
+                    title = "Senior Android Developer",
+                    company = "TechCorp Solutions",
+                    location = "San Francisco, CA",
+                    type = "Full-Time",
+                    salary = "$130k - $160k",
+                    experience = "3-5 yrs",
+                    description = ""
+                )
+                applicationViewModel.submitApplication(
+                    job = dummyJob,
+                    resumeId = "res_default",
+                    coverNote = coverNote
+                )
+            }
         )
     }
 }

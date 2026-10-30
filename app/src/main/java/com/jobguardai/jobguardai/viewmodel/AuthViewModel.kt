@@ -23,6 +23,7 @@ class AuthViewModel(private val repository: AuthRepository = AuthRepository()) :
 
     val currentUser = repository.currentUser
     val isLoggedIn = repository.isLoggedIn
+    val lastGeneratedOtp = repository.lastGeneratedOtp
 
     fun login(email: String, pass: String) {
         viewModelScope.launch {
@@ -46,6 +47,26 @@ class AuthViewModel(private val repository: AuthRepository = AuthRepository()) :
                 _uiState.value = AuthUiState.Error(it.message ?: "Registration failed")
             }
         }
+    }
+
+    suspend fun verifyEmail(otp: String): Result<Boolean> {
+        return repository.verifyEmail(otp, currentUser.value?.email)
+    }
+
+    suspend fun resendOtp(): Result<String> {
+        return repository.resendOtp(currentUser.value?.email)
+    }
+
+    suspend fun forgotPassword(email: String): Result<String> {
+        return repository.forgotPassword(email)
+    }
+
+    suspend fun resetPassword(token: String, newPass: String): Result<Boolean> {
+        return repository.resetPassword(token, newPass)
+    }
+
+    suspend fun changePassword(currentPass: String, newPass: String): Result<Boolean> {
+        return repository.changePassword(currentPass, newPass)
     }
 
     fun logout() {

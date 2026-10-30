@@ -1,8 +1,12 @@
 package com.jobguardai.jobguardai.data.repository
 
 import com.jobguardai.jobguardai.data.model.Placement
+import com.jobguardai.jobguardai.data.remote.ApiService
+import com.jobguardai.jobguardai.data.remote.RetrofitClient
 
-class PlacementRepository {
+class PlacementRepository(
+    private val apiService: ApiService = RetrofitClient.getApiService()
+) {
     private val demoPlacements = listOf(
         Placement(
             id = "place_1",
@@ -34,9 +38,29 @@ class PlacementRepository {
         )
     )
 
-    fun getPlacements(): List<Placement> = demoPlacements
+    suspend fun getPlacements(): List<Placement> {
+        try {
+            val response = apiService.getPlacements()
+            if (response.isSuccessful && response.body()?.success == true) {
+                val list = response.body()!!.data
+                if (!list.isNullOrEmpty()) return list
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
+        return demoPlacements
+    }
 
-    fun getPlacementById(id: String): Placement? {
+    suspend fun getPlacementById(id: String): Placement? {
+        try {
+            val response = apiService.getPlacementById(id)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val p = response.body()!!.data
+                if (p != null) return p
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
         return demoPlacements.find { it.id == id } ?: demoPlacements.first()
     }
 }

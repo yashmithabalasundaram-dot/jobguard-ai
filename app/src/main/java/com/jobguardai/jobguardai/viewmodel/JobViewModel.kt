@@ -35,6 +35,10 @@ class JobViewModel(private val repository: JobRepository = JobRepository()) : Vi
         }
     }
 
+    suspend fun searchJobsOnline(query: String?): List<Job> {
+        return repository.searchJobs(query = query, role = _filterRole.value)
+    }
+
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }

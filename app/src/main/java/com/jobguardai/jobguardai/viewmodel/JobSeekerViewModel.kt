@@ -3,7 +3,6 @@ package com.jobguardai.jobguardai.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jobguardai.jobguardai.data.model.Education
-import com.jobguardai.jobguardai.data.model.Experience
 import com.jobguardai.jobguardai.data.model.JobSeeker
 import com.jobguardai.jobguardai.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,6 +16,16 @@ class JobSeekerViewModel(private val repository: AuthRepository = AuthRepository
 
     private val _saveStatus = MutableStateFlow<String?>(null)
     val saveStatus: StateFlow<String?> = _saveStatus.asStateFlow()
+
+    init {
+        refreshProfile()
+    }
+
+    fun refreshProfile() {
+        viewModelScope.launch {
+            repository.refreshUserProfile()
+        }
+    }
 
     fun updatePersonalDetails(name: String, email: String, phone: String, bio: String, headline: String, location: String) {
         viewModelScope.launch {
@@ -39,6 +48,9 @@ class JobSeekerViewModel(private val repository: AuthRepository = AuthRepository
             val current = userProfile.value ?: JobSeeker()
             val updated = current.copy(educationList = educationList)
             repository.updateProfile(updated)
+            educationList.forEach { edu ->
+                repository.saveEducation(edu)
+            }
             _saveStatus.value = "Education details saved"
         }
     }
@@ -52,6 +64,8 @@ class JobSeekerViewModel(private val repository: AuthRepository = AuthRepository
                 preferredLocations = locations
             )
             repository.updateProfile(updated)
+            repository.updateSkills(skills)
+            repository.updatePreferences(roles, locations)
             _saveStatus.value = "Skills & Preferences saved"
         }
     }

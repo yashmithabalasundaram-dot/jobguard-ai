@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
@@ -28,12 +30,24 @@ import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.JobSeekerViewModel
 
 @Composable
-fun PersonalDetailsScreen(navController: NavController) {
-    var headline by remember { mutableStateOf("Android Developer | Jetpack Compose") }
-    var location by remember { mutableStateOf("San Francisco, CA") }
-    var bio by remember { mutableStateOf("Passionate mobile developer building modern Android apps with Kotlin and MVVM.") }
+fun PersonalDetailsScreen(
+    navController: NavController,
+    viewModel: JobSeekerViewModel = viewModel()
+) {
+    val userProfile by viewModel.userProfile.collectAsState()
+
+    var headline by remember(userProfile) {
+        mutableStateOf(userProfile?.headline ?: "")
+    }
+    var location by remember(userProfile) {
+        mutableStateOf(userProfile?.location ?: "")
+    }
+    var bio by remember(userProfile) {
+        mutableStateOf(userProfile?.bio ?: "")
+    }
 
     Column(
         modifier = Modifier
@@ -88,7 +102,18 @@ fun PersonalDetailsScreen(navController: NavController) {
 
         PrimaryButton(
             text = "Save & Next",
-            onClick = { navController.navigate(ScreenRoutes.EducationDetails.route) }
+            onClick = {
+                val current = userProfile
+                viewModel.updatePersonalDetails(
+                    name = current?.fullName ?: "",
+                    email = current?.email ?: "",
+                    phone = current?.phone ?: "",
+                    bio = bio.trim(),
+                    headline = headline.trim(),
+                    location = location.trim()
+                )
+                navController.navigate(ScreenRoutes.EducationDetails.route)
+            }
         )
     }
 }

@@ -1,8 +1,12 @@
 package com.jobguardai.jobguardai.data.repository
 
 import com.jobguardai.jobguardai.data.model.Company
+import com.jobguardai.jobguardai.data.remote.ApiService
+import com.jobguardai.jobguardai.data.remote.RetrofitClient
 
-class CompanyRepository {
+class CompanyRepository(
+    private val apiService: ApiService = RetrofitClient.getApiService()
+) {
     private val demoCompanies = listOf(
         Company(
             id = "comp_1",
@@ -29,6 +33,15 @@ class CompanyRepository {
     )
 
     suspend fun getCompanyById(id: String): Company? {
+        try {
+            val response = apiService.getCompanyById(id)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val comp = response.body()!!.data
+                if (comp != null) return comp
+            }
+        } catch (e: Exception) {
+            // Fallback
+        }
         return demoCompanies.find { it.id == id } ?: demoCompanies.first()
     }
 }
