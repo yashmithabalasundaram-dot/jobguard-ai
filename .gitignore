@@ -16,3 +16,7 @@ local.properties
 .artifacts/
 app/build/
 backend/.env
+backend/uploads/resumes/*.pdf
+backend/uploads/resumes/*.docx
+backend/uploads/resumes/*.doc
+backend/uploads/resumes/*.txt
