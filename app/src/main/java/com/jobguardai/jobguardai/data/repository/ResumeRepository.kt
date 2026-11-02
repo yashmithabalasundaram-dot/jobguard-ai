@@ -1,11 +1,14 @@
 package com.jobguardai.jobguardai.data.repository
 
+import com.jobguardai.jobguardai.JobGuardApplication
 import com.jobguardai.jobguardai.data.local.ResumeDao
 import com.jobguardai.jobguardai.data.model.Resume
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-class ResumeRepository(private val resumeDao: ResumeDao? = null) {
+class ResumeRepository(
+    private val resumeDao: ResumeDao? = try { JobGuardApplication.instance.database.resumeDao() } catch (e: Exception) { null }
+) {
 
     private val sampleResume = Resume(
         id = "res_1",

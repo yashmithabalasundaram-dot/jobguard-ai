@@ -1,13 +1,16 @@
 package com.jobguardai.jobguardai.data.repository
 
+import com.jobguardai.jobguardai.JobGuardApplication
 import com.jobguardai.jobguardai.data.local.JobDao
 import com.jobguardai.jobguardai.data.model.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-class JobRepository(private val jobDao: JobDao? = null) {
+class JobRepository(
+    private val jobDao: JobDao? = try { JobGuardApplication.instance.database.jobDao() } catch (e: Exception) { null }
+) {
 
-    private val demoJobs = listOf(
+    private val fallbackJobs = listOf(
         Job(
             id = "job_1",
             title = "Senior Android Developer",
@@ -20,13 +23,12 @@ class JobRepository(private val jobDao: JobDao? = null) {
             requirements = listOf(
                 "3+ years of native Android development using Kotlin",
                 "Strong experience with Jetpack Compose & Material 3",
-                "Proficiency in MVVM, Dependency Injection, Room & Coroutines",
-                "Experience with CI/CD and automated unit testing"
+                "Proficiency in MVVM, Dependency Injection, Room & Coroutines"
             ),
             skills = listOf("Kotlin", "Jetpack Compose", "Coroutines", "MVVM", "Room", "REST API"),
             isSaved = false,
             matchScore = 94,
-            deadline = "15 Oct 2025"
+            deadline = "15 Nov 2025"
         ),
         Job(
             id = "job_2",
@@ -45,7 +47,7 @@ class JobRepository(private val jobDao: JobDao? = null) {
             skills = listOf("Jetpack Compose", "Figma", "Kotlin", "Material 3", "UI Animations"),
             isSaved = true,
             matchScore = 88,
-            deadline = "20 Oct 2025"
+            deadline = "20 Nov 2025"
         ),
         Job(
             id = "job_3",
@@ -63,7 +65,7 @@ class JobRepository(private val jobDao: JobDao? = null) {
             skills = listOf("Kotlin", "On-Device AI", "Coroutines", "TensorFlow Lite", "Retrofit"),
             isSaved = false,
             matchScore = 82,
-            deadline = "28 Oct 2025"
+            deadline = "28 Nov 2025"
         ),
         Job(
             id = "job_4",
@@ -88,15 +90,15 @@ class JobRepository(private val jobDao: JobDao? = null) {
     )
 
     fun getJobs(): Flow<List<Job>> {
-        return jobDao?.getAllJobs() ?: flowOf(demoJobs)
+        return jobDao?.getAllJobs() ?: flowOf(fallbackJobs)
     }
 
     fun getSavedJobs(): Flow<List<Job>> {
-        return jobDao?.getSavedJobs() ?: flowOf(demoJobs.filter { it.isSaved })
+        return jobDao?.getSavedJobs() ?: flowOf(fallbackJobs.filter { it.isSaved })
     }
 
     suspend fun getJobById(id: String): Job? {
-        return jobDao?.getJobById(id) ?: demoJobs.find { it.id == id }
+        return jobDao?.getJobById(id) ?: fallbackJobs.find { it.id == id }
     }
 
     suspend fun toggleSaveJob(id: String, currentSavedState: Boolean) {

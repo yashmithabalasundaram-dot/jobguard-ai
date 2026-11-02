@@ -11,37 +11,29 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.jobguardai.jobguardai.data.model.Job
 import com.jobguardai.jobguardai.ui.components.JobCard
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
 import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
+import com.jobguardai.jobguardai.viewmodel.JobViewModel
 
 @Composable
-fun SavedJobsScreen(navController: NavController) {
-    val savedJobs = listOf(
-        Job(
-            id = "job_2",
-            title = "Mobile UI/UX Engineer",
-            company = "InnovateX Labs",
-            location = "Remote",
-            type = "Remote",
-            salary = "$110k - $140k",
-            experience = "2-4 yrs",
-            description = "Build interactive mobile designs with Material 3.",
-            skills = listOf("Jetpack Compose", "Material 3"),
-            isSaved = true,
-            matchScore = 88
-        )
-    )
+fun SavedJobsScreen(
+    navController: NavController,
+    jobViewModel: JobViewModel = viewModel()
+) {
+    val savedJobs by jobViewModel.savedJobs.collectAsState()
 
     Column(
         modifier = Modifier
@@ -49,15 +41,20 @@ fun SavedJobsScreen(navController: NavController) {
             .background(BackgroundLight)
             .padding(16.dp)
     ) {
-        Text(text = "Saved Jobs (1)", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        Text(text = "Saved Jobs (${savedJobs.size})", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(savedJobs) { job ->
-                JobCard(
-                    job = job,
-                    onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) }
-                )
+        if (savedJobs.isEmpty()) {
+            Text(text = "No saved jobs yet. Bookmark jobs to view them here.", color = TextPrimary)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(savedJobs) { job ->
+                    JobCard(
+                        job = job,
+                        onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) },
+                        onSaveClick = { jobViewModel.toggleSave(job) }
+                    )
+                }
             }
         }
     }

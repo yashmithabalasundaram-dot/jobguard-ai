@@ -31,18 +31,20 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.PrimaryButton
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
-import com.jobguardai.jobguardai.ui.theme.BackgroundLight
+import com.jobguardai.jobguardai.ui.theme.DarkCharcoalText
+import com.jobguardai.jobguardai.ui.theme.DeepTealPrimary
+import com.jobguardai.jobguardai.ui.theme.EmeraldSecondary
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
-import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
-import com.jobguardai.jobguardai.ui.theme.TextPrimary
-import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.ui.theme.MintGreenHighlight
+import com.jobguardai.jobguardai.ui.theme.MutedGreyGreenText
+import com.jobguardai.jobguardai.ui.theme.WarmWhiteBackground
 
 @Composable
 fun OnboardingScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(BackgroundLight)
+            .background(WarmWhiteBackground)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
@@ -53,13 +55,13 @@ fun OnboardingScreen(navController: NavController) {
             modifier = Modifier
                 .size(160.dp)
                 .clip(CircleShape)
-                .background(PrimaryBlue.copy(alpha = 0.1f)),
+                .background(MintGreenHighlight),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                tint = PrimaryBlue,
+                tint = EmeraldSecondary,
                 modifier = Modifier.size(80.dp)
             )
         }
@@ -69,14 +71,14 @@ fun OnboardingScreen(navController: NavController) {
                 text = "Land Your Dream Job with AI & Stay Protected",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                color = DarkCharcoalText,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = "AI Resume analysis, skill gap mapping, automated job matches, and scam detection engine.",
                 fontSize = 15.sp,
-                color = TextSecondary,
+                color = MutedGreyGreenText,
                 textAlign = TextAlign.Center
             )
         }
@@ -90,7 +92,7 @@ fun OnboardingScreen(navController: NavController) {
                     modifier = Modifier
                         .size(10.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue)
+                        .background(EmeraldSecondary)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Box(
@@ -105,6 +107,7 @@ fun OnboardingScreen(navController: NavController) {
 
             PrimaryButton(
                 text = "Get Started",
+                containerColor = EmeraldSecondary,
                 onClick = { navController.navigate(ScreenRoutes.CreateAccount.route) }
             )
 
@@ -113,7 +116,7 @@ fun OnboardingScreen(navController: NavController) {
             PrimaryButton(
                 text = "Log In",
                 onClick = { navController.navigate(ScreenRoutes.Login.route) },
-                containerColor = Color.LightGray.copy(alpha = 0.4f)
+                containerColor = DeepTealPrimary
             )
         }
     }

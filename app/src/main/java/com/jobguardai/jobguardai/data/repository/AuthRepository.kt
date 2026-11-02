@@ -6,6 +6,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class AuthRepository {
+
+    companion object {
+        val instance = AuthRepository()
+    }
+
     private val _currentUser = MutableStateFlow<JobSeeker?>(
         JobSeeker(
             id = "user_1",

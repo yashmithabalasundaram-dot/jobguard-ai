@@ -23,10 +23,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,9 +33,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.jobguardai.jobguardai.data.model.Job
 import com.jobguardai.jobguardai.ui.components.JobCard
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
 import com.jobguardai.jobguardai.ui.theme.BackgroundLight
@@ -47,37 +45,15 @@ import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
 import com.jobguardai.jobguardai.ui.theme.TypedBlackText
+import com.jobguardai.jobguardai.viewmodel.JobViewModel
 
 @Composable
-fun SearchJobsScreen(navController: NavController) {
-    var searchQuery by remember { mutableStateOf("") }
-
-    val jobs = listOf(
-        Job(
-            id = "job_1",
-            title = "Senior Android Developer",
-            company = "TechCorp Solutions",
-            location = "San Francisco, CA",
-            type = "Full-Time",
-            salary = "$130k - $160k",
-            experience = "3-5 yrs",
-            description = "Kotlin Compose MVVM.",
-            skills = listOf("Kotlin", "Compose"),
-            matchScore = 94
-        ),
-        Job(
-            id = "job_2",
-            title = "Mobile UI/UX Engineer",
-            company = "InnovateX Labs",
-            location = "Remote",
-            type = "Remote",
-            salary = "$110k - $140k",
-            experience = "2-4 yrs",
-            description = "Design UI with Compose.",
-            skills = listOf("Compose", "Material 3"),
-            matchScore = 88
-        )
-    )
+fun SearchJobsScreen(
+    navController: NavController,
+    jobViewModel: JobViewModel = viewModel()
+) {
+    val searchQuery by jobViewModel.searchQuery.collectAsState()
+    val jobs by jobViewModel.filteredJobs.collectAsState()
 
     BoxWithConstraints(
         modifier = Modifier
@@ -99,7 +75,7 @@ fun SearchJobsScreen(navController: NavController) {
             ) {
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = { jobViewModel.updateSearchQuery(it) },
                     placeholder = { Text(text = "Search title, skill or company...", color = TextSecondary) },
                     leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = TextSecondary) },
                     singleLine = true,
@@ -134,7 +110,8 @@ fun SearchJobsScreen(navController: NavController) {
                 items(jobs) { job ->
                     JobCard(
                         job = job,
-                        onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) }
+                        onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) },
+                        onSaveClick = { jobViewModel.toggleSave(job) }
                     )
                 }
             }

@@ -1,7 +1,6 @@
 package com.jobguardai.jobguardai.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -12,15 +11,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = EmeraldSecondary,
-    secondary = FreshTealAccent,
+    primary = FreshTealAccent,
+    secondary = EmeraldSecondary,
     tertiary = MintGreenHighlight,
-    background = DarkCharcoalText,
-    surface = Color(0xFF1B2420),
-    onPrimary = SurfaceLight,
-    onSecondary = SurfaceLight,
-    onBackground = SurfaceLight,
-    onSurface = SurfaceLight
+    background = Color(0xFF0F172A),
+    surface = Color(0xFF1E293B),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -37,7 +36,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun JobguardAiTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Defaults to false for consistent premium Teal & Emerald Light theme rendering
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {

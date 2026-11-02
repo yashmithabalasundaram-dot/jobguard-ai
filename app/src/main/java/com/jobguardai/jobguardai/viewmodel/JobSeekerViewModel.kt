@@ -3,7 +3,6 @@ package com.jobguardai.jobguardai.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jobguardai.jobguardai.data.model.Education
-import com.jobguardai.jobguardai.data.model.Experience
 import com.jobguardai.jobguardai.data.model.JobSeeker
 import com.jobguardai.jobguardai.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,7 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class JobSeekerViewModel(private val repository: AuthRepository = AuthRepository()) : ViewModel() {
+class JobSeekerViewModel(private val repository: AuthRepository = AuthRepository.instance) : ViewModel() {
 
     val userProfile: StateFlow<JobSeeker?> = repository.currentUser
 

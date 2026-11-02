@@ -16,7 +16,7 @@ sealed class AuthUiState {
     data class Error(val message: String) : AuthUiState()
 }
 
-class AuthViewModel(private val repository: AuthRepository = AuthRepository()) : ViewModel() {
+class AuthViewModel(private val repository: AuthRepository = AuthRepository.instance) : ViewModel() {
 
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()

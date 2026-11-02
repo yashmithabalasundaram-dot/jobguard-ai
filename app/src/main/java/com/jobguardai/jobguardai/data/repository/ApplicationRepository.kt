@@ -1,11 +1,14 @@
 package com.jobguardai.jobguardai.data.repository
 
+import com.jobguardai.jobguardai.JobGuardApplication
 import com.jobguardai.jobguardai.data.local.JobApplicationDao
 import com.jobguardai.jobguardai.data.model.JobApplication
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-class ApplicationRepository(private val applicationDao: JobApplicationDao? = null) {
+class ApplicationRepository(
+    private val applicationDao: JobApplicationDao? = try { JobGuardApplication.instance.database.jobApplicationDao() } catch (e: Exception) { null }
+) {
 
     private val demoApplications = listOf(
         JobApplication(

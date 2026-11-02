@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
@@ -37,6 +36,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,12 +47,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.jobguardai.jobguardai.data.model.Job
 import com.jobguardai.jobguardai.ui.components.JobCard
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
-import com.jobguardai.jobguardai.ui.theme.AccessibleSuccessGreen
 import com.jobguardai.jobguardai.ui.theme.BackgroundLight
 import com.jobguardai.jobguardai.ui.theme.DarkCharcoalText
 import com.jobguardai.jobguardai.ui.theme.DeepTealPrimary
@@ -60,50 +60,23 @@ import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
 import com.jobguardai.jobguardai.ui.theme.MintGreenHighlight
 import com.jobguardai.jobguardai.ui.theme.MutedGreyGreenText
 import com.jobguardai.jobguardai.ui.theme.SubtleGreyGreenBorder
+import com.jobguardai.jobguardai.viewmodel.ApplicationViewModel
+import com.jobguardai.jobguardai.viewmodel.JobSeekerViewModel
+import com.jobguardai.jobguardai.viewmodel.JobViewModel
 
 @Composable
-fun HomeDashboardScreen(navController: NavController) {
-    val sampleJobs = listOf(
-        Job(
-            id = "job_1",
-            title = "Senior Android Developer",
-            company = "TechCorp Solutions",
-            location = "San Francisco, CA (Hybrid)",
-            type = "Full-Time",
-            salary = "$130k - $160k",
-            experience = "3-5 yrs",
-            description = "Lead mobile development team using Jetpack Compose and Coroutines.",
-            skills = listOf("Kotlin", "Jetpack Compose", "MVVM"),
-            isSaved = false,
-            matchScore = 94
-        ),
-        Job(
-            id = "job_2",
-            title = "Mobile UI/UX Engineer",
-            company = "InnovateX Labs",
-            location = "Remote",
-            type = "Remote",
-            salary = "$110k - $140k",
-            experience = "2-4 yrs",
-            description = "Build interactive mobile designs with Material 3.",
-            skills = listOf("Jetpack Compose", "Material 3"),
-            isSaved = true,
-            matchScore = 88
-        ),
-        Job(
-            id = "job_4",
-            title = "Urgent Data Entry (High Income)",
-            company = "Global Wealth Systems",
-            location = "Work from Home",
-            type = "Part-Time",
-            salary = "$5,000 / week",
-            experience = "None",
-            description = "Pay $50 starter fee.",
-            isScamFlagged = true,
-            scamReason = "Upfront payment required ($50)",
-            matchScore = 20
-        )
-    )
+fun HomeDashboardScreen(
+    navController: NavController,
+    jobViewModel: JobViewModel = viewModel(),
+    jobSeekerViewModel: JobSeekerViewModel = viewModel(),
+    applicationViewModel: ApplicationViewModel = viewModel()
+) {
+    val userProfile by jobSeekerViewModel.userProfile.collectAsState()
+    val jobs by jobViewModel.allJobs.collectAsState()
+    val savedJobs by jobViewModel.savedJobs.collectAsState()
+    val applications by applicationViewModel.applications.collectAsState()
+
+    val userName = userProfile?.fullName?.ifBlank { "Alex Morgan" } ?: "Alex Morgan"
 
     BoxWithConstraints(
         modifier = Modifier
@@ -132,7 +105,7 @@ fun HomeDashboardScreen(navController: NavController) {
                 ) {
                     Column {
                         Text(
-                            text = "Good Morning, Alex 👋",
+                            text = "Good Morning, $userName 👋",
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -147,7 +120,7 @@ fun HomeDashboardScreen(navController: NavController) {
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "AI Guard Active • 3 Recommended Matches",
+                                text = "AI Guard Active • ${jobs.size} Matches Available",
                                 fontSize = 12.sp,
                                 color = MintGreenHighlight,
                                 fontWeight = FontWeight.SemiBold
@@ -254,13 +227,13 @@ fun HomeDashboardScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Quick Stats Row
+                // Real-time Quick Stats Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    StatCard("Saved Jobs", "1", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.SavedJobs.route) }
-                    StatCard("Applications", "2", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.ApplicationTracker.route) }
+                    StatCard("Saved Jobs", "${savedJobs.size}", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.SavedJobs.route) }
+                    StatCard("Applications", "${applications.size}", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.ApplicationTracker.route) }
                     StatCard("Placements", "2", Modifier.weight(1f)) { navController.navigate(ScreenRoutes.PlacementOpportunities.route) }
                 }
 
@@ -291,10 +264,11 @@ fun HomeDashboardScreen(navController: NavController) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.weight(1f)
                 ) {
-                    items(sampleJobs) { job ->
+                    items(jobs) { job ->
                         JobCard(
                             job = job,
-                            onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) }
+                            onClick = { navController.navigate(ScreenRoutes.JobDetails.createRoute(job.id)) },
+                            onSaveClick = { jobViewModel.toggleSave(job) }
                         )
                     }
                 }
