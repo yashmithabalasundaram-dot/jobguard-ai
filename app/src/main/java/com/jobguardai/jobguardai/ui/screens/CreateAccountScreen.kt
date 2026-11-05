@@ -26,19 +26,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
 import com.jobguardai.jobguardai.ui.components.PrimaryButton
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
 import com.jobguardai.jobguardai.ui.theme.BackgroundLight
+import com.jobguardai.jobguardai.ui.theme.DeepTealPrimary
+import com.jobguardai.jobguardai.ui.theme.EmeraldSecondary
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
-import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.AuthViewModel
 
 @Composable
-fun CreateAccountScreen(navController: NavController) {
+fun CreateAccountScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -109,7 +115,13 @@ fun CreateAccountScreen(navController: NavController) {
 
         PrimaryButton(
             text = "Register & Continue",
-            onClick = { navController.navigate(ScreenRoutes.VerifyEmail.route) }
+            containerColor = EmeraldSecondary,
+            onClick = {
+                val realName = fullName.ifBlank { "Alex Morgan" }
+                val realEmail = email.ifBlank { "alex.morgan@example.com" }
+                authViewModel.register(realName, realEmail, phone, password)
+                navController.navigate(ScreenRoutes.VerifyEmail.route)
+            }
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -122,7 +134,7 @@ fun CreateAccountScreen(navController: NavController) {
                 text = "Log In",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryBlue,
+                color = DeepTealPrimary,
                 modifier = Modifier.clickable { navController.navigate(ScreenRoutes.Login.route) }
             )
         }

@@ -26,19 +26,25 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.jobguardai.jobguardai.ui.components.InputField
 import com.jobguardai.jobguardai.ui.components.PrimaryButton
 import com.jobguardai.jobguardai.ui.navigation.ScreenRoutes
 import com.jobguardai.jobguardai.ui.theme.BackgroundLight
+import com.jobguardai.jobguardai.ui.theme.DeepTealPrimary
+import com.jobguardai.jobguardai.ui.theme.EmeraldSecondary
 import com.jobguardai.jobguardai.ui.theme.JobguardAiTheme
-import com.jobguardai.jobguardai.ui.theme.PrimaryBlue
 import com.jobguardai.jobguardai.ui.theme.TextPrimary
 import com.jobguardai.jobguardai.ui.theme.TextSecondary
+import com.jobguardai.jobguardai.viewmodel.AuthViewModel
 
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    authViewModel: AuthViewModel = viewModel()
+) {
     var email by remember { mutableStateOf("alex.morgan@example.com") }
     var password by remember { mutableStateOf("password123") }
 
@@ -90,7 +96,7 @@ fun LoginScreen(navController: NavController) {
             text = "Forgot Password?",
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
-            color = PrimaryBlue,
+            color = DeepTealPrimary,
             modifier = Modifier
                 .align(Alignment.End)
                 .clickable { navController.navigate(ScreenRoutes.ResetPassword.route) }
@@ -100,7 +106,11 @@ fun LoginScreen(navController: NavController) {
 
         PrimaryButton(
             text = "Log In",
-            onClick = { navController.navigate(ScreenRoutes.HomeDashboard.route) }
+            containerColor = EmeraldSecondary,
+            onClick = {
+                authViewModel.login(email, password)
+                navController.navigate(ScreenRoutes.HomeDashboard.route)
+            }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -113,7 +123,7 @@ fun LoginScreen(navController: NavController) {
                 text = "Sign Up",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryBlue,
+                color = DeepTealPrimary,
                 modifier = Modifier.clickable { navController.navigate(ScreenRoutes.CreateAccount.route) }
             )
         }
